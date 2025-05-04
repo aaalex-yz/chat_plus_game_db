@@ -1,14 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 
@@ -26,7 +16,7 @@ namespace Windows_Forms_Chat
             InitializeComponent();
 
         }
-        
+
         public bool CanHostOrJoin()
         {
             if (server == null && client == null)
@@ -51,7 +41,7 @@ namespace Windows_Forms_Chat
                 }
                 catch (Exception ex)
                 {
-                    ChatTextBox.Text += "Error: " + ex ;
+                    ChatTextBox.Text += "Error: " + ex;
                     ChatTextBox.AppendText(Environment.NewLine);
                 }
             }
@@ -80,7 +70,7 @@ namespace Windows_Forms_Chat
                     ChatTextBox.Text += "Error: " + ex;
                     ChatTextBox.AppendText(Environment.NewLine);
                 }
-            
+
             }
         }
         private void SendButton_Click(object sender, EventArgs e)

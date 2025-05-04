@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Windows.Forms;
 
 namespace Windows_Forms_Chat
@@ -37,7 +35,7 @@ namespace Windows_Forms_Chat
 
         public bool SetTile(int index, TileType tileType)
         {
-            if(grid[index] == TileType.blank)
+            if (grid[index] == TileType.blank)
             {
                 grid[index] = tileType;
                 if (buttons.Count >= 9)
@@ -94,7 +92,7 @@ namespace Windows_Forms_Chat
 
         public bool CheckForDraw()
         {
-            for(int i = 0; i < 9; i++)
+            for (int i = 0; i < 9; i++)
             {
                 if (grid[i] == TileType.blank)
                     return false;

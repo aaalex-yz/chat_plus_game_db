@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
+using System.Text;
 using System.Windows.Forms;
-using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace Windows_Forms_Chat
 {
