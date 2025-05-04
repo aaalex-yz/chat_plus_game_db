@@ -16,5 +16,3 @@ public class ClientSocket
     public bool isModerator = false;
 
 }
-
-//test 2
