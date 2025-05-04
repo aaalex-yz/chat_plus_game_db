@@ -14,23 +14,18 @@ namespace Windows_Forms_Chat
 
     public class TicTacToe
     {
-        //TODO change myTurn to false and playerTileType to blank for defaults
-        //they should be dictated by the server
         public bool myTurn = true;
         public TileType playerTileType = TileType.cross;
-        public List<Button> buttons = new List<Button>();//assuming 9 in order
+        public List<Button> buttons = new List<Button>();   
         public TileType[] grid = new TileType[9];
 
         public string GridToString()
         {
             string s = "";
-            //TODO convert values on board to a string e.g "xox___x_o"
-
             return s;
         }
         public void StringToGrid(string s)
         {
-            //TODO take string s e.g "xox___x_o" and use its values to update grid and the buttons
         }
 
         public bool SetTile(int index, TileType tileType)
@@ -42,8 +37,6 @@ namespace Windows_Forms_Chat
                     buttons[index].Text = TileTypeToString(tileType);
                 return true;
             }
-            //else
-
             return true;
 
         }
@@ -63,7 +56,6 @@ namespace Windows_Forms_Chat
         }
         public bool CheckForWin(TileType t)
         {
-            //horizontals
             if (grid[0] == t && grid[1] == t && grid[2] == t)
                 return true;
             if (grid[3] == t && grid[4] == t && grid[5] == t)
@@ -71,7 +63,6 @@ namespace Windows_Forms_Chat
             if (grid[6] == t && grid[7] == t && grid[8] == t)
                 return true;
 
-            //verticals
             if (grid[0] == t && grid[3] == t && grid[6] == t)
                 return true;
             if (grid[1] == t && grid[4] == t && grid[7] == t)
@@ -79,14 +70,12 @@ namespace Windows_Forms_Chat
             if (grid[2] == t && grid[5] == t && grid[8] == t)
                 return true;
 
-            //diagonals
             if (grid[0] == t && grid[4] == t && grid[8] == t)
                 return true;
             if (grid[2] == t && grid[4] == t && grid[6] == t)
                 return true;
 
 
-            //nothing
             return false;
         }
 

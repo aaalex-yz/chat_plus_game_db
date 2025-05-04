@@ -10,11 +10,10 @@ namespace Windows_Forms_Chat
 {
     public class TCPChatServer : TCPChatBase
     {
-        /* ====== Server Properties ====== */
         public Socket serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         public List<ClientSocket> clientSockets = new List<ClientSocket>();
-        public List<ClientSocket> moderators = new List<ClientSocket>();// Added for Step 5 moderator tracking
-        public bool isServer = true; // Flag to identify server instance
+        public List<ClientSocket> moderators = new List<ClientSocket>();      
+        public bool isServer = true;      
 
         public static TCPChatServer createInstance(int port, TextBox chatTextBox)
         {
@@ -30,7 +29,6 @@ namespace Windows_Forms_Chat
 
         public void SetupServer()
         {
-            // Initialize server with improved text display
             chatTextBox.Clear();
             chatTextBox.AppendText("Setting up server..." + Environment.NewLine);
             serverSocket.Bind(new IPEndPoint(IPAddress.Any, port));
@@ -69,12 +67,8 @@ namespace Windows_Forms_Chat
             clientSockets.Add(newClientSocket);
             joiningSocket.BeginReceive(newClientSocket.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, newClientSocket);
             AddToChat("\r\nClient connected, waiting for request...");
-            // ====== Step 1: !username command onboarding hint ======
-
-            // Added command hint for new connections as part of username setup
             AddToChat("\r\nTo get a list of available server commands, use !commands");
 
-            // ====== End Step 1 ======
             serverSocket.BeginAccept(AcceptCallback, null);
         }
 
@@ -103,9 +97,6 @@ namespace Windows_Forms_Chat
                     return;
                 }
 
-                // ====== Step 4: Whisper/private chat message routing ======
-
-                // Verify target exists and is still in private chat with this user, part of step 4 [!whisper command]
                 if (currentClientSocket.privateChatTarget != null)
                 {
                     ClientSocket target = currentClientSocket.privateChatTarget;
@@ -128,8 +119,6 @@ namespace Windows_Forms_Chat
                     AddToChat($"PRIVATE: [{currentClientSocket.username}] -> [{target.username}]: {text}");
                     return;
                 }
-                // ====== End Step 4 ======
-
                 if (!string.IsNullOrEmpty(currentClientSocket.username))
                 {
                     string formattedMsg = $"[{currentClientSocket.username}]: {text}";
@@ -183,46 +172,37 @@ namespace Windows_Forms_Chat
             clientSockets.Remove(client);
         }
 
-        // ====== Steps 1–4: Refined Message Broadcasting (Global and Private) ======
-
         public void SendToAll(string str, ClientSocket from)
         {
-            // If the sender is null, it's a server-originated message, so prepend with [Server]:
             string messageToSend = from == null ? $"[Server]: {str}" : str;
 
-            // Log server-originated messages in the server chat window
             if (from == null)
             {
                 AddToChat(messageToSend);
             }
 
-            // Broadcast the message to all connected clients
             foreach (ClientSocket c in clientSockets.ToList())
             {
                 try
                 {
                     if (c.socket.Connected)
                     {
-                        // Send the message as ASCII-encoded bytes
                         byte[] data = Encoding.ASCII.GetBytes(messageToSend);
                         c.socket.Send(data);
                     }
                     else
                     {
-                        // Log a warning if the target socket is disconnected
                         AddToChat($"[Warning] Failed to send to {c.username} - socket disconnected");
                     }
                 }
                 catch (Exception ex)
                 {
-                    // Log any exceptions that occur during send
                     AddToChat($"[Send Error to {c.username}] {ex.Message}");
                 }
             }
         }
         private void SendToAllExceptSender(string message, ClientSocket sender)
         {
-            // Broadcast a message to all users EXCEPT the original sender (used in commands like !global)
             foreach (ClientSocket c in clientSockets)
             {
                 if (c != sender)
@@ -233,8 +213,6 @@ namespace Windows_Forms_Chat
             }
         }
 
-        // ====== End Steps 1–4 ======
-
 
         private void HandleClientCommand(string text, ClientSocket sender)
         {
@@ -242,10 +220,8 @@ namespace Windows_Forms_Chat
 
             try
             {
-                // ───── STEP 4: Command - !commands ─────
                 if (cmd == "!commands")
                 {
-                    // Sends a list of all available client commands
                     string ClientCommandsList = "Commands are:\r\n\r\n" +
                         "\t!about:  Get information about this app\r\n" +
                         "\t!commands:  Show this list\r\n" +
@@ -262,12 +238,10 @@ namespace Windows_Forms_Chat
                     AddToChat("Sent command list to client.");
                 }
 
-                // ───── STEP 1: Username Handling - !exit ─────
                 else if (cmd.StartsWith("!exit"))
                 {
                     try
                     {
-                        // Handles user logout and resets their session
                         string username = sender.username;
                         sender.socket.Send(Encoding.ASCII.GetBytes("You have been logged out. Please set a username to rejoin."));
 
@@ -298,12 +272,10 @@ namespace Windows_Forms_Chat
                     return;
                 }
 
-                // ───── STEP 4: Command - !global ─────
                 else if (cmd == "!global")
                 {
                     try
                     {
-                        // Ends private chat session and returns user to global chat
                         string username = sender.username;
 
                         if (sender.privateChatTarget == null)
@@ -365,7 +337,6 @@ namespace Windows_Forms_Chat
                     return;
                 }
 
-                // ───── STEP 1: Username Handling - !username ─────
                 else if (cmd.StartsWith("!username"))
                 {
                     string[] parts = text.Split(new char[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
@@ -390,7 +361,6 @@ namespace Windows_Forms_Chat
                     SendToAll($"[{requestedUsername}] has joined the chat!", sender);
                 }
 
-                // ───── STEP 3: Username Management - !user ─────
                 else if (cmd.StartsWith("!user "))
                 {
                     if (string.IsNullOrWhiteSpace(sender.username))
@@ -419,10 +389,8 @@ namespace Windows_Forms_Chat
                     AddToChat(changeMsg);
                 }
 
-                // ───── STEP 4: Command - !about ─────
                 else if (cmd.StartsWith("!about"))
                 {
-                    // Sends information about the application
                     string aboutInfo = "\r\nTCP Chat Application: Your gateway to real-time communication! Connect, chat, and manage your identity in a secure, simple chat environment.\r\n" +
                                        "\r\nDeveloped by: Daniel (A00151824)" +
                                        "\r\nFor academic purposes, as part of NDS203 Assessment 2" +
@@ -431,10 +399,8 @@ namespace Windows_Forms_Chat
                     AddToChat("Sent about info to client.");
                 }
 
-                // ───── STEP 4: Command - !who ─────
                 else if (cmd == "!who")
                 {
-                    // Displays list of currently online users
                     List<string> onlineUsers = clientSockets
                         .Where(c => c.username != null)
                         .Select(c => c.username)
@@ -453,10 +419,8 @@ namespace Windows_Forms_Chat
                     AddToChat("Sent list of online users.");
                 }
 
-                // ───── STEP 4: Command - !whisper ─────
                 else if (cmd.StartsWith("!whisper"))
                 {
-                    // Initiates private chat between sender and target user
                     if (string.IsNullOrEmpty(sender.username))
                     {
                         sender.socket.Send(Encoding.ASCII.GetBytes("[Please set username first]"));
@@ -498,27 +462,22 @@ namespace Windows_Forms_Chat
                     AddToChat($"A client [{sender.username}] started a private chat with [{target.username}]");
                 }
 
-                // ───── STEP 4: Command - !time ─────
                 else if (cmd == "!time")
                 {
-                    // Sends current system time
                     string time = DateTime.Now.ToString("hh:mm:ss tt");
                     sender.socket.Send(Encoding.ASCII.GetBytes($"The current time is: {time}"));
                     AddToChat("Sent current time to client.");
                 }
 
-                // ───── STEP 5: Moderator Command - !kick ─────
                 else if (cmd.StartsWith("!kick"))
                 {
                     if (!sender.isModerator)
                     {
-                        // Block non-mod users from using kick
                         sender.socket.Send(Encoding.ASCII.GetBytes("[You do not have permission to use this command]"));
                         AddToChat($"[Unauthorized Kick Attempt] {sender.username} tried to use !kick");
                     }
                     else
                     {
-                        // Forward kick command to server handler
                         HandleServerCommand(text, sender);
                     }
 
@@ -526,7 +485,6 @@ namespace Windows_Forms_Chat
                     return;
                 }
 
-                // ───── UNKNOWN COMMAND FALLBACK ─────
                 else
                 {
                     byte[] data = Encoding.ASCII.GetBytes("Unknown command. Type !commands for a list of available commands.");
@@ -546,19 +504,14 @@ namespace Windows_Forms_Chat
             }
             catch (Exception ex)
             {
-                // Generic catch for command processing failures
                 AddToChat($"[Error handling command '{cmd}'] {ex.Message}");
                 sender.socket.Send(Encoding.ASCII.GetBytes("[An error occurred while processing your request. Please try again later.]"));
             }
 
-            // Always resume listening
             sender.socket.BeginReceive(sender.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, sender);
         }
 
 
-        // ───────────────────────────────────────────────────────────────────────────────
-        // STEP 4: IMPLEMENTATION OF COMMANDS (!commands, !mod, !kick, !mods)
-        // ───────────────────────────────────────────────────────────────────────────────
         private void HandleServerCommand(string text, ClientSocket from)
         {
             string cmd = text.ToLower();
@@ -652,7 +605,6 @@ namespace Windows_Forms_Chat
                             AddToChat($"[{kickerName}] kicked [{targetUsername}] from the chat.");
                             SendToAll($"[{targetUsername}] has been removed by moderator [{kickerName}]", from);
 
-                            // Remove username but keep connection alive
                             targetClient.username = null;
 
                             string prompt = "To join the chat, please choose a username.\r\n" +
@@ -662,7 +614,6 @@ namespace Windows_Forms_Chat
                                             "\r\nUse !commands to see available commands.\r\n";
                             targetClient.socket.Send(Encoding.ASCII.GetBytes(prompt));
 
-                            // Start listening again for the new username
                             targetClient.socket.BeginReceive(targetClient.buffer, 0, ClientSocket.BUFFER_SIZE, SocketFlags.None, ReceiveCallback, targetClient);
                         }
                         else
@@ -683,17 +634,11 @@ namespace Windows_Forms_Chat
             }
         }
 
-        // ───────────────────────────────────────────────────────────────────────────────
-        // STEP 4 CONTINUED: HANDLER WRAPPER FOR SERVER COMMANDS
-        // ───────────────────────────────────────────────────────────────────────────────
         public void ProcessServerCommand(string command, ClientSocket from = null)
         {
             HandleServerCommand(command, from);
         }
 
-        // ───────────────────────────────────────────────────────────────────────────────
-        // STEP 3: USERNAME VALIDATION LOGIC
-        // ───────────────────────────────────────────────────────────────────────────────
         private bool IsUsernameValid(string requestedUsername, ClientSocket sender)
         {
             if (string.IsNullOrWhiteSpace(requestedUsername))
