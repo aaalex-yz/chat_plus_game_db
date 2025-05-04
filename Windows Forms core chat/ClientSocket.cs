@@ -16,5 +16,3 @@ public class ClientSocket
     public bool isModerator = false;
 
 }
-
-//testing git functionality
