@@ -3,7 +3,6 @@ using System.Windows.Forms;
 
 namespace Windows_Forms_Chat
 {
-
     public class TCPChatBase
     {
         public TextBox chatTextBox;

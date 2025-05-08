@@ -1,44 +1,61 @@
 ﻿using System.Collections.Generic;
 using System.Windows.Forms;
+using System.Linq; // For LINQ operations
+using System.Data.SQLite;  // For SQLite database operations
 
 namespace Windows_Forms_Chat
 {
-    public enum TileType
-    {
-        blank, cross, naught
-    }
-    public enum GameState
-    {
-        playing, draw, crossWins, naughtWins
-    }
+    public enum TileType { blank, cross, naught }
+    public enum GameState { playing, draw, crossWins, naughtWins }
 
     public class TicTacToe
     {
         public bool myTurn = true;
-        public TileType playerTileType = TileType.cross;
-        public List<Button> buttons = new List<Button>();   
+        public TileType playerTileType = TileType.blank; // Server will assign
+        public List<Button> buttons = new List<Button>();
         public TileType[] grid = new TileType[9];
 
         public string GridToString()
         {
-            string s = "";
-            return s;
+            char[] result = new char[9];
+            for (int i = 0; i < 9; i++)
+            {
+                result[i] = grid[i] switch
+                {
+                    TileType.cross => 'X',
+                    TileType.naught => 'O',
+                    _ => '_'
+                };
+            }
+            return new string(result);
         }
+
         public void StringToGrid(string s)
         {
+            for (int i = 0; i < s.Length && i < 9; i++)
+            {
+                grid[i] = s[i] switch
+                {
+                    'X' => TileType.cross,
+                    'O' => TileType.naught,
+                    _ => TileType.blank
+                };
+
+                if (i < buttons.Count)
+                    buttons[i].Text = TileTypeToString(grid[i]);
+            }
         }
 
         public bool SetTile(int index, TileType tileType)
         {
-            if (grid[index] == TileType.blank)
-            {
-                grid[index] = tileType;
-                if (buttons.Count >= 9)
-                    buttons[index].Text = TileTypeToString(tileType);
-                return true;
-            }
-            return true;
+            if (index < 0 || index >= grid.Length || grid[index] != TileType.blank)
+                return false;
 
+            grid[index] = tileType;
+            if (index < buttons.Count)
+                buttons[index].Text = TileTypeToString(tileType);
+
+            return true;
         }
 
         public GameState GetGameState()

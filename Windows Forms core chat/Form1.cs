@@ -1,8 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows.Forms;
 
-
-//reference: https://www.youtube.com/watch?v=xgLRe7QV6QI&ab_channel=HazardEditHazardEdit
 namespace Windows_Forms_Chat
 {
     public partial class Form1 : Form
@@ -36,7 +35,7 @@ namespace Windows_Forms_Chat
                     if (server == null)
                         throw new Exception("Incorrect port value!");
 
-                    server.SetupServer();
+                    server.Start();
 
                 }
                 catch (Exception ex)
@@ -56,7 +55,7 @@ namespace Windows_Forms_Chat
                 {
                     int port = int.Parse(MyPortTextBox.Text);
                     int serverPort = int.Parse(serverPortTextBox.Text);
-                    client = TCPChatClient.CreateInstance(port, serverPort, ServerIPTextBox.Text, ChatTextBox);
+                    client = TCPChatClient.CreateInstance(port, serverPort, ServerIPTextBox.Text, ChatTextBox, this);
 
                     if (client == null)
                         throw new Exception("Incorrect port value!");
@@ -102,50 +101,109 @@ namespace Windows_Forms_Chat
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            ticTacToe.buttons.Add(button1);
-            ticTacToe.buttons.Add(button2);
-            ticTacToe.buttons.Add(button3);
-            ticTacToe.buttons.Add(button4);
-            ticTacToe.buttons.Add(button5);
-            ticTacToe.buttons.Add(button6);
-            ticTacToe.buttons.Add(button7);
-            ticTacToe.buttons.Add(button8);
-            ticTacToe.buttons.Add(button9);
+            // Add all buttons to the game
+            ticTacToe.buttons.AddRange(new List<Button>
+            {
+                button1, button2, button3,
+                button4, button5, button6,
+                button7, button8, button9
+            });
+
+            // Hook each button to AttemptMove(i)
+            for (int i = 0; i < ticTacToe.buttons.Count; i++)
+            {
+                int index = i; // Capture loop variable
+                ticTacToe.buttons[i].Click += (s, e) => AttemptMove(index);
+            }
         }
 
         private void AttemptMove(int i)
         {
-            if (ticTacToe.myTurn)
-            {
-                bool validMove = ticTacToe.SetTile(i, ticTacToe.playerTileType);
-                if (validMove)
-                {
-                    //tell server about it
-                    //ticTacToe.myTurn = false;//call this too when ready with server
-                }
+            if (!ticTacToe.myTurn) return;
 
-                GameState gs = ticTacToe.GetGameState();
-                if (gs == GameState.crossWins)
-                {
-                    ChatTextBox.AppendText("X wins!");
-                    ChatTextBox.AppendText(Environment.NewLine);
-                    ticTacToe.ResetBoard();
-                }
-                if (gs == GameState.naughtWins)
-                {
-                    ChatTextBox.AppendText(") wins!");
-                    ChatTextBox.AppendText(Environment.NewLine);
-                    ticTacToe.ResetBoard();
-                }
-                if (gs == GameState.draw)
-                {
-                    ChatTextBox.AppendText("Draw!");
-                    ChatTextBox.AppendText(Environment.NewLine);
-                    ticTacToe.ResetBoard();
-                }
+            bool validMove = ticTacToe.SetTile(i, ticTacToe.playerTileType);
+            if (!validMove) return;
+
+            // Tell the server the move
+            client.SendString($"MOVE:{i}");
+
+            ticTacToe.myTurn = false; // Wait for server to respond
+
+            GameState gs = ticTacToe.GetGameState();
+            if (gs == GameState.crossWins)
+            {
+                ChatTextBox.AppendText("X wins!\n");
+                ticTacToe.ResetBoard();
+            }
+            else if (gs == GameState.naughtWins)
+            {
+                ChatTextBox.AppendText("O wins!\n");
+                ticTacToe.ResetBoard();
+            }
+            else if (gs == GameState.draw)
+            {
+                ChatTextBox.AppendText("Draw!\n");
+                ticTacToe.ResetBoard();
             }
         }
 
+        public bool ProcessServerMessage(string message)
+        {
+            if (message.StartsWith("UPDATE_TILE:"))
+            {
+                var parts = message.Split(':');
+                if (parts.Length == 3 && int.TryParse(parts[1], out int index))
+                {
+                    TileType t = parts[2] switch
+                    {
+                        "cross" => TileType.cross,
+                        "naught" => TileType.naught,
+                        _ => TileType.blank
+                    };
+
+                    ticTacToe.SetTile(index, t);
+                }
+                return true;
+            }
+            else if (message.StartsWith("YOUR_TURN"))
+            {
+                ticTacToe.myTurn = true;
+                AddToChat("It's your turn!");
+                return true;
+            }
+            else if (message.StartsWith("WAIT_TURN"))
+            {
+                ticTacToe.myTurn = false;
+                string info = message.Contains('|') ? message.Split('|')[1] : "Waiting...";
+                AddToChat(info);
+                return true;
+            }
+            else if (message.StartsWith("BOARD_STATE:"))
+            {
+                string board = message.Substring("BOARD_STATE:".Length);
+                ticTacToe.StringToGrid(board);
+                return true;
+            }
+            else if (message == "X wins!" || message == "O wins!" || message == "It's a draw!")
+            {
+                MessageBox.Show(message, "Game Over");
+
+                AddToChat($"[Game] {message}"); // NEW
+                ticTacToe.myTurn = false; // Ensure no further moves are made // NEW
+
+                ticTacToe.ResetBoard();
+                return true;
+            }
+
+            return false; // let it fall through to normal chat display
+        }
+
+        private void AddToChat(string message)
+        {
+            ChatTextBox.AppendText(message + Environment.NewLine);
+        }
+
+        
         private void button1_Click(object sender, EventArgs e)
         {
             AttemptMove(0);
